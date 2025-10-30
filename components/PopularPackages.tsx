@@ -251,69 +251,64 @@ export function PopularPackages() {
     setIsModalOpen(true);
   };
 
-  const onSubmit = async (data: FormData) => {
-    setIsSubmitting(true);
+ const onSubmit = async (data: FormData) => {
+  setIsSubmitting(true);
+  
+  try {
+    // Get package details
+    const selectedPkg = packages.find(p => p.id.toString() === data.packageId);
     
-    try {
-      // Get package details
-      const selectedPkg = packages.find(p => p.id.toString() === data.packageId);
-      
-      // Prepare email data
-      const emailData = {
-        packageTitle: selectedPkg?.title || 'N/A',
-        packageLocation: selectedPkg?.location || 'N/A',
-        packageDates: selectedPkg?.dates || 'N/A',
-        packagePrice: selectedPkg?.price || 'N/A',
-        customerName: data.name,
-        customerPhone: data.phone,
-        customerEmail: data.email,
-        customerComments: data.comments || 'Sin comentarios',
-      };
+    // Prepare email data
+    const emailData = {
+      packageTitle: selectedPkg?.title || 'N/A',
+      packageLocation: selectedPkg?.location || 'N/A',
+      packageDates: selectedPkg?.dates || 'N/A',
+      packagePrice: selectedPkg?.price || 'N/A',
+      customerName: data.name,
+      customerPhone: data.phone,
+      customerEmail: data.email,
+      customerComments: data.comments || 'Sin comentarios',
+    };
 
-      // DEMO MODE - Email functionality disconnected
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('✅ Solicitud de Reserva Recibida (Modo Demo)');
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('📦 Paquete:', emailData.packageTitle);
-      console.log('📍 Ubicación:', emailData.packageLocation);
-      console.log('📅 Fechas:', emailData.packageDates);
-      console.log('💰 Precio:', emailData.packagePrice);
-      console.log('');
-      console.log('👤 Información del Cliente:');
-      console.log('   Nombre:', emailData.customerName);
-      console.log('   Email:', emailData.customerEmail);
-      console.log('   Teléfono:', emailData.customerPhone);
-      console.log('   Comentarios:', emailData.customerComments);
-      console.log('');
-      console.log('ℹ️ Modo Demo Activo - Email Desconectado');
-      console.log('   Los datos se capturan correctamente pero no se envían por email.');
-      console.log('   Para configurar email con tu nuevo proyecto de Supabase:');
-      console.log('   1. Actualiza projectId y publicAnonKey en /utils/supabase/info.tsx');
-      console.log('   2. Configura las variables SMTP en tu proyecto de Supabase');
-      console.log('   3. Despliega el servidor con: ./deploy-commands.sh');
-      console.log('═══════════════════════════════════════════════════════');
-      
-      // Show success message (demo mode)
-      toast.success('¡Solicitud recibida correctamente!', {
-        description: 'Los datos se han capturado. (Modo Demo - el email no se envió)',
-        duration: 5000,
-      });
-      
-      setIsModalOpen(false);
-      reset();
-      setIsSubmitting(false);
-    } catch (error) {
-      console.error('Error al procesar solicitud:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      
-      toast.error('Error al enviar la solicitud', {
-        description: errorMessage,
-        duration: 5000,
-      });
-      
-      setIsSubmitting(false);
+    // Send reservation email via Supabase server
+    const response = await fetch(
+  `https://kuqbhgcvsuwlhsdpaele.supabase.co/functions/v1/server/send-reservation-email`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1cWJoZ2N2c3V3bGhzZHBhZWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2NjY3MDMsImV4cCI6MjA3NzI0MjcwM30.6m3y5nJanySxBscKyXBg_fGerQdV5ZJwL3iUuTXPXLM`,
+        },
+        body: JSON.stringify(emailData),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al enviar email');
     }
-  };
+
+    const result = await response.json();
+    console.log('Email sent successfully:', result);
+
+    toast.success('¡Solicitud enviada con éxito!', {
+      description: 'Nos pondremos en contacto contigo pronto.',
+    });
+
+    setIsModalOpen(false);
+    reset();
+    setIsSubmitting(false);
+  } catch (error) {
+    console.error('Error al procesar solicitud:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    toast.error('Error al enviar la solicitud', {
+      description: errorMessage,
+    });
+    
+    setIsSubmitting(false);
+  }
+};
 
 
 
